@@ -16,7 +16,8 @@ curl -fsSL https://yourgeeky.com/install.sh | bash
 ```
 
 The installer asks whether you have a paid Claude plan. If not, it sets up Google's free
-AI (sign in with any Google account); if so, it sets up Claude Code. Then type `yourgeeky`.
+AI (sign in with any Google account); if so, it sets up Claude Code. It also adds a
+YourGeeky icon to the Dock and the Applications folder. Click it, or type `yourgeeky`.
 
 ## Use
 
@@ -24,6 +25,7 @@ AI (sign in with any Google account); if so, it sets up Claude Code. Then type `
 yourgeeky                      # start a conversation
 yourgeeky "install Python"     # start with a request
 yourgeeky --show-commands      # also show the real commands, so you can learn them
+yourgeeky --notes              # open your notes: what YourGeeky has done on this Mac
 yourgeeky --use claude         # switch to Claude Code (or --use google to switch back)
 ```
 
@@ -32,6 +34,12 @@ yourgeeky --use claude         # switch to Claude Code (or --use google to switc
 Installing tools, running instructions from a guide, explaining errors, fixing
 "command not found" and "permission denied", setting up Homebrew, finding folders,
 getting unstuck, running a project someone shared, and updating or removing software.
+
+## Notes of what was done
+
+After YourGeeky installs, removes or changes something, it adds a dated, plain-English
+entry to `~/YourGeeky notes.txt`, with how to undo it where that helps. People can look
+back later, show the notes to someone helping them, or ask YourGeeky to undo something.
 
 ## How it works
 
@@ -46,3 +54,6 @@ so nothing runs without the person's say-so.
 ```
 bash tests/run.sh
 ```
+
+The Dock icon is made by the installer from `assets/icon.png` (drawn in `assets/icon.svg`),
+using the Mac's built-in `sips` and `iconutil`.

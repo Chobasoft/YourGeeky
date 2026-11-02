@@ -37,7 +37,7 @@ fi
 
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
-cp -R "$src/bin" "$src/prompts" "$INSTALL_DIR/"
+cp -R "$src/bin" "$src/prompts" "$src/assets" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/bin/yourgeeky"
 ln -sf "$INSTALL_DIR/bin/yourgeeky" "$BIN_DIR/yourgeeky"
 
@@ -53,6 +53,91 @@ case ":$PATH:" in
     say "Open a new Terminal window so it can find YourGeeky."
     ;;
 esac
+
+# Make a YourGeeky app, so people can start it from the Dock or the Applications
+# folder instead of opening Terminal and typing. Clicking it opens a Terminal
+# window with YourGeeky already running.
+make_app() {
+  local parent="${YOURGEEKY_APP_DIR:-}"
+  if [ -z "$parent" ]; then
+    [ "$(uname -s)" = "Darwin" ] || return 0
+    if [ -d /Applications ] && [ -w /Applications ]; then
+      parent="/Applications"
+    else
+      parent="$HOME/Applications"
+    fi
+  fi
+  local app="$parent/YourGeeky.app"
+  rm -rf "$app"
+  mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+
+  cat > "$app/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>YourGeeky</string>
+  <key>CFBundleDisplayName</key><string>YourGeeky</string>
+  <key>CFBundleIdentifier</key><string>com.yourgeeky.app</string>
+  <key>CFBundleExecutable</key><string>YourGeeky</string>
+  <key>CFBundleIconFile</key><string>YourGeeky</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>LSMinimumSystemVersion</key><string>10.13</string>
+  <key>NSHighResolutionCapable</key><true/>
+</dict>
+</plist>
+PLIST
+
+  # Terminal runs a .command file when asked to open it, without needing any
+  # extra permission to control Terminal.
+  cat > "$app/Contents/Resources/start.command" <<START
+#!/bin/bash
+export PATH="$BIN_DIR:\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH"
+clear
+exec "$INSTALL_DIR/bin/yourgeeky"
+START
+  chmod +x "$app/Contents/Resources/start.command"
+
+  cat > "$app/Contents/MacOS/YourGeeky" <<'LAUNCH'
+#!/bin/bash
+open -a Terminal "$(cd "$(dirname "$0")/../Resources" && pwd)/start.command"
+LAUNCH
+  chmod +x "$app/Contents/MacOS/YourGeeky"
+
+  # The Geeky picture, turned into a Mac icon with Apple's built-in tools.
+  if [ -f "$INSTALL_DIR/assets/icon.png" ] && command -v sips >/dev/null 2>&1 && command -v iconutil >/dev/null 2>&1; then
+    local set="$INSTALL_DIR/YourGeeky.iconset" size
+    rm -rf "$set"; mkdir -p "$set"
+    for size in 16 32 128 256 512; do
+      sips -z "$size" "$size" "$INSTALL_DIR/assets/icon.png" --out "$set/icon_${size}x${size}.png" >/dev/null 2>&1 || true
+      sips -z $((size * 2)) $((size * 2)) "$INSTALL_DIR/assets/icon.png" --out "$set/icon_${size}x${size}@2x.png" >/dev/null 2>&1 || true
+    done
+    iconutil -c icns "$set" -o "$app/Contents/Resources/YourGeeky.icns" >/dev/null 2>&1 || true
+    rm -rf "$set"
+  fi
+  touch "$app"
+  app_made=1
+
+  # Put it in the Dock, once.
+  if [ "$(uname -s)" = "Darwin" ] && [ -z "${YOURGEEKY_SKIP_DOCK:-}" ] && command -v defaults >/dev/null 2>&1; then
+    if ! defaults read com.apple.dock persistent-apps 2>/dev/null | grep -q "YourGeeky.app"; then
+      local url
+      url="file://$(printf '%s' "$app" | sed 's/ /%20/g')/"
+      defaults write com.apple.dock persistent-apps -array-add \
+        "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$url</string><key>_CFURLStringType</key><integer>15</integer></dict></dict></dict>" \
+        && killall Dock >/dev/null 2>&1 || true
+    fi
+    say "Added YourGeeky to your Dock and your Applications folder."
+  else
+    say "Added YourGeeky to $parent."
+  fi
+}
+
+app_made=""
+if [ -z "${YOURGEEKY_SKIP_APP:-}" ]; then
+  make_app || say "(Couldn't make the YourGeeky icon. You can still start it by typing yourgeeky.)"
+fi
 
 # Choose and set up the AI that YourGeeky uses. Google's is free; Claude Code
 # needs a paid Claude plan.
@@ -91,7 +176,11 @@ if [ -z "${YOURGEEKY_SKIP_ENGINE:-}" ]; then
 fi
 
 say ""
-say "All set. To start, type:  yourgeeky"
+if [ -n "$app_made" ]; then
+  say "All set. To start, click YourGeeky in your Dock, or type:  yourgeeky"
+else
+  say "All set. To start, type:  yourgeeky"
+fi
 if [ "$engine" = "claude" ]; then
   say "The first time, you'll be asked to sign in to your Claude account."
 else

@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 
 # Find the real install folder, even when this script is run through a symlink.
 resolve_home() {
@@ -25,6 +25,9 @@ GUIDE="$YG_HOME/prompts/guide.md"
 ENGINE_FILE="${YOURGEEKY_ENGINE_FILE:-$YG_HOME/engine}"
 CLAUDE_BIN="${YOURGEEKY_CLAUDE:-claude}"
 AGY_BIN="${YOURGEEKY_AGY:-agy}"
+# A plain-English record of what YourGeeky has done on this Mac, kept in the
+# home folder so it's easy to find in Finder.
+NOTES_FILE="${YOURGEEKY_NOTES:-$HOME/YourGeeky notes.txt}"
 
 say() { printf '%s\n' "$*"; }
 
@@ -36,6 +39,7 @@ How to use it:
   yourgeeky                      Start a conversation
   yourgeeky "install Python"     Start with a request
   yourgeeky --show-commands      Also show the real commands, so you can learn them
+  yourgeeky --notes              Open your notes: what YourGeeky has done for you
 
 Choosing the AI:
   yourgeeky --use google         Use Google's free AI (the default)
@@ -102,7 +106,22 @@ build_prompt() {
   fi
   local text
   text="$(cat "$GUIDE")"
-  printf '%s' "${text/COMMANDS_MODE/$mode}"
+  text="${text/COMMANDS_MODE/$mode}"
+  printf '%s' "${text//NOTES_FILE/$NOTES_FILE}"
+}
+
+open_notes() {
+  if [ ! -s "$NOTES_FILE" ]; then
+    say "There are no notes yet. After YourGeeky installs or changes something for you,"
+    say "it writes it down in \"$NOTES_FILE\" so you can look back later."
+    return 0
+  fi
+  if command -v open >/dev/null 2>&1 && [ "$(uname -s)" = "Darwin" ]; then
+    open -e "$NOTES_FILE"
+    say "Your notes are open in TextEdit."
+  else
+    cat "$NOTES_FILE"
+  fi
 }
 
 main() {
@@ -115,6 +134,7 @@ main() {
       -h|--help) usage; exit 0 ;;
       -v|--version) say "yourgeeky $VERSION"; exit 0 ;;
       --show-commands) commands="show" ;;
+      --notes) open_notes; exit 0 ;;
       --use)
         shift
         case "${1:-}" in
