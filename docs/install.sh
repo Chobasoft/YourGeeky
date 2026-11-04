@@ -119,7 +119,9 @@ LAUNCH
   touch "$app"
   app_made=1
 
-  # Put it in the Dock, once.
+  # Put it in the Dock, once, and only say so if it really is there.
+  local where="your Applications folder"
+  [ "$parent" = "/Applications" ] || where="the Applications folder in your home folder"
   if [ "$(uname -s)" = "Darwin" ] && [ -z "${YOURGEEKY_SKIP_DOCK:-}" ] && command -v defaults >/dev/null 2>&1; then
     if ! defaults read com.apple.dock persistent-apps 2>/dev/null | grep -q "YourGeeky.app"; then
       local url
@@ -128,9 +130,15 @@ LAUNCH
         "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$url</string><key>_CFURLStringType</key><integer>15</integer></dict></dict></dict>" \
         && killall Dock >/dev/null 2>&1 || true
     fi
-    say "Added YourGeeky to your Dock and your Applications folder."
+    if defaults read com.apple.dock persistent-apps 2>/dev/null | grep -q "YourGeeky.app"; then
+      say "Added YourGeeky to your Dock and $where."
+    else
+      say "Added YourGeeky to $where."
+      say "To put it in your Dock, drag the YourGeeky icon from that Finder window onto the Dock."
+      open "$parent" >/dev/null 2>&1 || true
+    fi
   else
-    say "Added YourGeeky to $parent."
+    say "Added YourGeeky to $where."
   fi
 }
 
