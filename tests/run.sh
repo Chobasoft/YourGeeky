@@ -41,6 +41,7 @@ check "agy gets the request" 'grep -q "first request: install Python" "$TMP/args
 check "agy greets with no request" 'grep -q "greet the person" "$TMP/args"'
 "$ROOT/bin/yourgeeky" > "$TMP/start-out"
 check "says it is using Google" 'grep -q "using Google" "$TMP/start-out"'
+check "tells people how to say yes" 'grep -q "type y and press Return" "$TMP/start-out"'
 check "guide says what to press" 'grep -q "Press Return to" "$ROOT/session-guide.md"'
 check "says when it is safe to close the window" 'grep -q "You can close this window" "$TMP/start-out"'
 check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$ROOT/session-guide.md"'

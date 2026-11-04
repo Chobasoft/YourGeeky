@@ -179,9 +179,19 @@ main() {
     say "YourGeeky is using Google's free AI. (To switch to Claude, type: yourgeeky --use claude)"
   fi
   say "Hi, I'm YourGeeky. Tell me what you need in plain words, like \"install Python\"."
-  say "I'll explain each step and ask before changing anything. To leave, type /exit (with the slash)."
-  say "Prefer to talk? Press the microphone key (or Fn twice) to speak instead of typing."
+  say "I'll explain each step and ask before changing anything."
   say ""
+  say "How to answer me:"
+  say "  - To say yes to a question, type y and press Return."
+  say "  - When a box pops up asking to run or allow something, press Return for yes."
+  say "  - To leave, type /exit (with the slash) and press Return."
+  say "  - Prefer to talk? Press the microphone key (or Fn twice) and speak."
+  say ""
+  # The AI's screen can push this off the top, so wait until they've read it.
+  if [ -t 0 ] && [ -t 1 ]; then
+    printf 'Press Return to start. '
+    read -r _ || true
+  fi
 
   local prompt
   prompt="$(build_prompt "$commands")"
