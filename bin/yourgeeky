@@ -173,6 +173,11 @@ main() {
   engine="$(current_engine)"
   ensure_engine "$engine"
 
+  if [ "$engine" = "claude" ]; then
+    say "YourGeeky is using Claude Code. (To switch to Google's free AI, type: yourgeeky --use google)"
+  else
+    say "YourGeeky is using Google's free AI. (To switch to Claude, type: yourgeeky --use claude)"
+  fi
   say "Hi, I'm YourGeeky. Tell me what you need in plain words, like \"install Python\"."
   say "I'll explain each step and ask before changing anything. To leave, type /exit (with the slash)."
   say "Prefer to talk? Press the microphone key (or Fn twice) to speak instead of typing."

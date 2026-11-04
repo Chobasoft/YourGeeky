@@ -39,7 +39,10 @@ check "guide says to explain before every command" 'grep -q "Always talk before 
 check "agy gets the request" 'grep -q "first request: install Python" "$TMP/args"'
 "$ROOT/bin/yourgeeky" >/dev/null
 check "agy greets with no request" 'grep -q "greet the person" "$TMP/args"'
-check "says when it is safe to close the window" '"$ROOT/bin/yourgeeky" | grep -q "You can close this window"'
+"$ROOT/bin/yourgeeky" > "$TMP/start-out"
+check "says it is using Google" 'grep -q "using Google" "$TMP/start-out"'
+check "guide says what to press" 'grep -q "Press Return to" "$ROOT/session-guide.md"'
+check "says when it is safe to close the window" 'grep -q "You can close this window" "$TMP/start-out"'
 check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$ROOT/session-guide.md"'
 check "bad --use value fails" '! "$ROOT/bin/yourgeeky" --use bogus >/dev/null 2>&1'
 
@@ -53,7 +56,8 @@ check "guide is appended" 'grep -q "You are YourGeeky" "$TMP/args"'
 check "commands hidden by default" 'grep -q "Hide raw commands" "$TMP/args"'
 check "placeholder replaced" '! grep -q "COMMANDS_MODE" "$TMP/args"'
 
-"$ROOT/bin/yourgeeky" --show-commands >/dev/null
+"$ROOT/bin/yourgeeky" --show-commands > "$TMP/start-out"
+check "says it is using Claude" 'grep -q "using Claude Code" "$TMP/start-out"'
 check "--show-commands shows commands" 'grep -q "Show each command" "$TMP/args"'
 
 # Notes of what was done.
