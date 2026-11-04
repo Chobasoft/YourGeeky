@@ -32,6 +32,7 @@ check "unknown option fails" '! "$ROOT/bin/yourgeeky" --bogus >/dev/null 2>&1'
 check "google is the default" 'grep -q "^TOOL=agy$" "$TMP/args"'
 check "agy starts interactive" 'grep -q "^-i$" "$TMP/args"'
 check "agy gets the guide" 'grep -q "You are YourGeeky" "$TMP/args"'
+check "guide says to explain before every command" 'grep -q "Always talk before you act" "$TMP/args"'
 check "agy gets the request" 'grep -q "first request is: install Python" "$TMP/args"'
 "$ROOT/bin/yourgeeky" >/dev/null
 check "agy greets with no request" 'grep -q "Start by greeting" "$TMP/args"'
