@@ -28,6 +28,7 @@ AGY_BIN="${YOURGEEKY_AGY:-agy}"
 # A plain-English record of what YourGeeky has done on this Mac, kept in the
 # home folder so it's easy to find in Finder.
 NOTES_FILE="${YOURGEEKY_NOTES:-$HOME/YourGeeky notes.txt}"
+SESSION_FILE="$YG_HOME/session.pid"
 
 say() { printf '%s\n' "$*"; }
 
@@ -40,6 +41,7 @@ How to use it:
   yourgeeky "install Python"     Start with a request
   yourgeeky --show-commands      Also show the real commands, so you can learn them
   yourgeeky --notes              Open your notes: what YourGeeky has done for you
+  Type quit while talking to it   Close YourGeeky
 
 Choosing the AI:
   yourgeeky --use google         Use Google's free AI (the default)
@@ -107,7 +109,8 @@ build_prompt() {
   local text
   text="$(cat "$GUIDE")"
   text="${text/COMMANDS_MODE/$mode}"
-  printf '%s' "${text//NOTES_FILE/$NOTES_FILE}"
+  text="${text//NOTES_FILE/$NOTES_FILE}"
+  printf '%s' "${text//QUIT_COMMAND/\"$YG_HOME/bin/yourgeeky\" --quit}"
 }
 
 open_notes() {
@@ -124,6 +127,22 @@ open_notes() {
   fi
 }
 
+# Ends a running YourGeeky conversation. The AI runs this when the person says
+# "quit", by stopping the AI that YourGeeky started.
+quit_session() {
+  local pid="${YOURGEEKY_PID:-}"
+  if [ -z "$pid" ] && [ -f "$SESSION_FILE" ]; then
+    pid="$(tr -d '[:space:]' < "$SESSION_FILE")"
+  fi
+  if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    say "YourGeeky isn't running right now."
+    return 1
+  fi
+  say "Goodbye! Closing YourGeeky."
+  pkill -TERM -P "$pid" 2>/dev/null || true
+  return 0
+}
+
 main() {
   local commands="hide"
   local request=""
@@ -135,6 +154,7 @@ main() {
       -v|--version) say "yourgeeky $VERSION"; exit 0 ;;
       --show-commands) commands="show" ;;
       --notes) open_notes; exit 0 ;;
+      --quit) quit_session; exit $? ;;
       --use)
         shift
         case "${1:-}" in
@@ -173,6 +193,12 @@ main() {
   engine="$(current_engine)"
   ensure_engine "$engine"
 
+  # Geeky, drawn in colored blocks (Terminal can't show real pictures).
+  if [ -f "$YG_HOME/assets/geeky.ans" ] && [ "${TERM:-dumb}" != "dumb" ]; then
+    say ""
+    cat "$YG_HOME/assets/geeky.ans"
+    say ""
+  fi
   if [ "$engine" = "claude" ]; then
     say "YourGeeky is using Claude Code. (To switch to Google's free AI, type: yourgeeky --use google)"
   else
@@ -184,7 +210,7 @@ main() {
   say "How to answer me:"
   say "  - To say yes to a question, type y and press Return."
   say "  - When a box pops up asking to run or allow something, press Return for yes."
-  say "  - To leave, type /exit (with the slash) and press Return."
+  say "  - To leave, type quit and press Return."
   say "  - Prefer to talk? Press the microphone key (or Fn twice) and speak."
   say ""
   # The AI's screen can push this off the top, so wait until they've read it.
@@ -196,6 +222,9 @@ main() {
   local prompt
   prompt="$(build_prompt "$commands")"
   local status=0
+  # Let "quit" find this conversation (see quit_session).
+  export YOURGEEKY_PID="$$"
+  printf '%s\n' "$$" > "$SESSION_FILE" 2>/dev/null || true
   if [ "$engine" = "claude" ]; then
     if [ -n "$request" ]; then
       "$CLAUDE_BIN" --append-system-prompt "$prompt" "$request" || status=$?
@@ -217,8 +246,11 @@ main() {
     "$AGY_BIN" --add-dir "$YG_HOME" -i "$opening" || status=$?
   fi
 
+  rm -f "$SESSION_FILE"
   say ""
   say "YourGeeky has finished. You can close this window now (press Command + W)."
+  # Being stopped by "quit" counts as a normal ending.
+  [ "$status" -eq 143 ] && status=0
   return "$status"
 }
 

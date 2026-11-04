@@ -41,10 +41,31 @@ check "agy gets the request" 'grep -q "first request: install Python" "$TMP/args
 check "agy greets with no request" 'grep -q "greet the person" "$TMP/args"'
 "$ROOT/bin/yourgeeky" > "$TMP/start-out"
 check "says it is using Google" 'grep -q "using Google" "$TMP/start-out"'
+check "shows Geeky at the start" 'TERM=xterm "$ROOT/bin/yourgeeky" > "$TMP/art-out" && grep -q "38;5;26" "$TMP/art-out"'
 check "tells people how to say yes" 'grep -q "type y and press Return" "$TMP/start-out"'
 check "guide says what to press" 'grep -q "Press Return to" "$ROOT/session-guide.md"'
 check "says when it is safe to close the window" 'grep -q "You can close this window" "$TMP/start-out"'
-check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$ROOT/session-guide.md"'
+check "guide explains how to leave" 'grep -q "Okay, closing YourGeeky" "$ROOT/session-guide.md"'
+check "guide has the real quit command" 'grep -q "bin/yourgeeky\" --quit" "$ROOT/session-guide.md" && ! grep -q "QUIT_COMMAND" "$ROOT/session-guide.md"'
+
+# "quit" closes a running conversation.
+cat > "$TMP/slow-agy" <<'SLOW'
+#!/usr/bin/env bash
+sleep 30
+SLOW
+chmod +x "$TMP/slow-agy"
+YOURGEEKY_AGY="$TMP/slow-agy" "$ROOT/bin/yourgeeky" > "$TMP/quit-out" 2>&1 &
+yg_pid=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do [ -f "$ROOT/session.pid" ] && break; sleep 0.2; done
+sleep 0.3
+YOURGEEKY_PID="$yg_pid" "$ROOT/bin/yourgeeky" --quit > "$TMP/quit-cmd-out"
+for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$yg_pid" 2>/dev/null || break; sleep 0.2; done
+check "quit stops the conversation" '! kill -0 "$yg_pid" 2>/dev/null'
+wait "$yg_pid" 2>/dev/null && quit_status=0 || quit_status=$?
+check "quitting counts as a normal ending" '[ "$quit_status" -eq 0 ]'
+check "quit says goodbye" 'grep -q "Goodbye" "$TMP/quit-cmd-out"'
+check "quit tidies up" '[ ! -f "$ROOT/session.pid" ]'
+check "quit when not running explains" '! YOURGEEKY_PID=999999 "$ROOT/bin/yourgeeky" --quit | grep -q Goodbye'
 check "bad --use value fails" '! "$ROOT/bin/yourgeeky" --use bogus >/dev/null 2>&1'
 
 # Switching to Claude Code.
@@ -84,6 +105,7 @@ check "installed command runs via symlink" '"$TMP/home/.local/bin/yourgeeky" --v
 YOURGEEKY_ENGINE_FILE="$TMP/home/.yourgeeky/engine" "$TMP/home/.local/bin/yourgeeky" hi >/dev/null
 check "installed command finds guide" 'grep -q "You are YourGeeky" "$TMP/args"'
 check "installer copies the icon picture" '[ -f "$TMP/home/.yourgeeky/assets/icon.png" ]'
+check "installer copies the Terminal Geeky" '[ -f "$TMP/home/.yourgeeky/assets/geeky.ans" ]'
 check "no app made off a Mac unless asked" '[ ! -e "$TMP/home/Applications/YourGeeky.app" ]'
 
 # The Dock app, built into a chosen folder (the Dock itself is only touched on a Mac).
