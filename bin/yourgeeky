@@ -210,7 +210,7 @@ main() {
   say "How to answer me:"
   say "  - To say yes to a question, type y and press Return."
   say "  - When a box pops up asking to run or allow something, press Return for yes."
-  say "  - To leave, type quit and press Return."
+  say "  - To leave, type quit and press Return, or click the red circle at the top left of this window."
   say "  - Prefer to talk? Press the microphone key (or Fn twice) and speak."
   say ""
   # The AI's screen can push this off the top, so wait until they've read it.
