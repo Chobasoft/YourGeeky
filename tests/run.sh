@@ -69,6 +69,12 @@ HOME="$TMP/home" PATH="/usr/bin:/bin" YOURGEEKY_SKIP_ENGINE=1 YOURGEEKY_DIR="$TM
 check "installer links the command" '[ -L "$TMP/home/.local/bin/yourgeeky" ]'
 check "installer adds PATH to .zshrc" 'grep -q ".local/bin" "$TMP/home/.zshrc"'
 check "installer defaults to google" 'grep -q "^google$" "$TMP/home/.yourgeeky/engine"'
+printf 'claude\n' > "$TMP/home/.yourgeeky/engine"
+HOME="$TMP/home" PATH="/usr/bin:/bin" YOURGEEKY_SKIP_ENGINE=1 YOURGEEKY_SKIP_APP=1 YOURGEEKY_DIR="$TMP/home/.yourgeeky" \
+  YOURGEEKY_BIN_DIR="$TMP/home/.local/bin" bash "$ROOT/docs/install.sh" > "$TMP/reinstall-out"
+check "reinstall keeps the chosen AI" 'grep -q "^claude$" "$TMP/home/.yourgeeky/engine"'
+check "reinstall says which AI it kept" 'grep -q "keep using Claude Code" "$TMP/reinstall-out"'
+printf 'google\n' > "$TMP/home/.yourgeeky/engine"
 check "installed command runs via symlink" '"$TMP/home/.local/bin/yourgeeky" --version | grep -q 0.3.0'
 YOURGEEKY_ENGINE_FILE="$TMP/home/.yourgeeky/engine" "$TMP/home/.local/bin/yourgeeky" hi >/dev/null
 check "installed command finds guide" 'grep -q "You are YourGeeky" "$TMP/args"'

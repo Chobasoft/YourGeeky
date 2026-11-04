@@ -35,6 +35,12 @@ if [ -z "$src" ]; then
   src="$tmp"
 fi
 
+# Remember which AI they chose before, so reinstalling doesn't ask again.
+previous_engine=""
+if [ -f "$INSTALL_DIR/engine" ]; then
+  previous_engine="$(tr -d '[:space:]' < "$INSTALL_DIR/engine")"
+fi
+
 rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 cp -R "$src/bin" "$src/prompts" "$src/assets" "$INSTALL_DIR/"
@@ -153,14 +159,36 @@ fi
 # needs a paid Claude plan.
 engine="${YOURGEEKY_ENGINE:-}"
 if [ -z "$engine" ]; then
+  case "$previous_engine" in google|claude) engine="$previous_engine" ;; esac
+  if [ -n "$engine" ]; then
+    if [ "$engine" = "claude" ]; then
+      say "YourGeeky will keep using Claude Code. (To switch, type: yourgeeky --use google)"
+    else
+      say "YourGeeky will keep using Google's free AI. (To switch, type: yourgeeky --use claude)"
+    fi
+  fi
+fi
+if [ -z "$engine" ]; then
   engine="google"
   if [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null; then
+    # Throw away anything already typed or pasted, so extra pasted lines can't
+    # answer this question by accident.
+    while read -r -t 1 _ < /dev/tty 2>/dev/null; do :; done
     say ""
     say "YourGeeky can use Google's free AI, or Claude Code if you already pay for a Claude plan."
-    printf 'Do you have a paid Claude plan (Pro or Max)? Most people answer n. [y/n] '
-    answer=""
-    read -r answer < /dev/tty || true
-    case "$answer" in [Yy]*) engine="claude" ;; esac
+    tries=0
+    while :; do
+      printf 'Do you have a paid Claude plan (Pro or Max)? Most people answer n. Type y or n: '
+      answer=""
+      read -r answer < /dev/tty || break
+      case "$answer" in
+        [Yy]*) engine="claude"; break ;;
+        [Nn]*) break ;;
+      esac
+      tries=$((tries + 1))
+      [ "$tries" -ge 3 ] && break
+      say "Please type y for yes or n for no, then press Return."
+    done
   fi
 fi
 printf '%s\n' "$engine" > "$INSTALL_DIR/engine"
