@@ -188,23 +188,18 @@ main() {
       "$CLAUDE_BIN" --append-system-prompt "$prompt" || status=$?
     fi
   else
-    # Antigravity CLI has no system prompt option, so the guide goes in as the
-    # opening message of the conversation.
-    local opening
+    # Antigravity CLI has no system prompt option, and whatever goes in the
+    # opening message is shown on screen and in the window title. So the guide
+    # goes in a file, and the opening message is one short line pointing at it.
+    local guide_file="$YG_HOME/session-guide.md"
+    printf '%s\n' "$prompt" > "$guide_file"
+    local opening="You are YourGeeky. First, quietly read your instructions in $guide_file and follow them for this whole conversation. Don't mention the file."
     if [ -n "$request" ]; then
-      opening="$prompt
-
----
-
-Follow the guide above for this whole conversation. The person's first request is: $request"
+      opening="$opening Then help with the person's first request: $request"
     else
-      opening="$prompt
-
----
-
-Follow the guide above for this whole conversation. Start by greeting the person in one short sentence and asking what they need help with."
+      opening="$opening Then greet the person in one short sentence and ask what they need help with."
     fi
-    "$AGY_BIN" -i "$opening" || status=$?
+    "$AGY_BIN" --add-dir "$YG_HOME" -i "$opening" || status=$?
   fi
 
   say ""

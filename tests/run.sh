@@ -31,13 +31,16 @@ check "unknown option fails" '! "$ROOT/bin/yourgeeky" --bogus >/dev/null 2>&1'
 "$ROOT/bin/yourgeeky" install Python >/dev/null
 check "google is the default" 'grep -q "^TOOL=agy$" "$TMP/args"'
 check "agy starts interactive" 'grep -q "^-i$" "$TMP/args"'
-check "agy gets the guide" 'grep -q "You are YourGeeky" "$TMP/args"'
-check "guide says to explain before every command" 'grep -q "Always talk before you act" "$TMP/args"'
-check "agy gets the request" 'grep -q "first request is: install Python" "$TMP/args"'
+check "agy is pointed at the guide file" 'grep -q "session-guide.md" "$TMP/args"'
+check "agy can read the guide folder" 'grep -q "^--add-dir$" "$TMP/args"'
+check "guide is not in the opening message" '! grep -q "Safety rules" "$TMP/args"'
+check "guide file has the guide" 'grep -q "You are YourGeeky" "$ROOT/session-guide.md"'
+check "guide says to explain before every command" 'grep -q "Always talk before you act" "$ROOT/session-guide.md"'
+check "agy gets the request" 'grep -q "first request: install Python" "$TMP/args"'
 "$ROOT/bin/yourgeeky" >/dev/null
-check "agy greets with no request" 'grep -q "Start by greeting" "$TMP/args"'
+check "agy greets with no request" 'grep -q "greet the person" "$TMP/args"'
 check "says when it is safe to close the window" '"$ROOT/bin/yourgeeky" | grep -q "You can close this window"'
-check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$TMP/args"'
+check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$ROOT/session-guide.md"'
 check "bad --use value fails" '! "$ROOT/bin/yourgeeky" --use bogus >/dev/null 2>&1'
 
 # Switching to Claude Code.
