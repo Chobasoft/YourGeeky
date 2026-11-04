@@ -36,6 +36,8 @@ check "guide says to explain before every command" 'grep -q "Always talk before 
 check "agy gets the request" 'grep -q "first request is: install Python" "$TMP/args"'
 "$ROOT/bin/yourgeeky" >/dev/null
 check "agy greets with no request" 'grep -q "Start by greeting" "$TMP/args"'
+check "says when it is safe to close the window" '"$ROOT/bin/yourgeeky" | grep -q "You can close this window"'
+check "guide explains how to leave" 'grep -q "/exit (with the slash) and press Return" "$TMP/args"'
 check "bad --use value fails" '! "$ROOT/bin/yourgeeky" --use bogus >/dev/null 2>&1'
 
 # Switching to Claude Code.

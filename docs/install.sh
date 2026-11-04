@@ -95,7 +95,9 @@ PLIST
 #!/bin/bash
 export PATH="$BIN_DIR:\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH"
 clear
-exec "$INSTALL_DIR/bin/yourgeeky"
+"$INSTALL_DIR/bin/yourgeeky"
+# Ending cleanly lets Terminal close the window by itself, if it's set to.
+exit 0
 START
   chmod +x "$app/Contents/Resources/start.command"
 

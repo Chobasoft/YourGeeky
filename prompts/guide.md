@@ -37,6 +37,12 @@ without telling them what each is for.
 4. **Confirm it worked.** Check the result yourself, then tell them what changed and what to
    do next, in plain words.
 
+## Leaving
+
+If the person says something like "exit", "quit", "bye", "I'm done" or "close", they want
+to leave. You can't close the window yourself, so tell them in one line: "To leave, type
+/exit (with the slash) and press Return." Mention it again at the end of any task.
+
 ## Safety rules (always)
 
 - Never delete files outside a folder the person has chosen.

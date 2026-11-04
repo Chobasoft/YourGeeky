@@ -174,37 +174,42 @@ main() {
   ensure_engine "$engine"
 
   say "Hi, I'm YourGeeky. Tell me what you need in plain words, like \"install Python\"."
-  say "I'll explain each step and ask before changing anything. Type /exit to leave."
+  say "I'll explain each step and ask before changing anything. To leave, type /exit (with the slash)."
   say "Prefer to talk? Press the microphone key (or Fn twice) to speak instead of typing."
   say ""
 
   local prompt
   prompt="$(build_prompt "$commands")"
+  local status=0
   if [ "$engine" = "claude" ]; then
     if [ -n "$request" ]; then
-      exec "$CLAUDE_BIN" --append-system-prompt "$prompt" "$request"
+      "$CLAUDE_BIN" --append-system-prompt "$prompt" "$request" || status=$?
     else
-      exec "$CLAUDE_BIN" --append-system-prompt "$prompt"
+      "$CLAUDE_BIN" --append-system-prompt "$prompt" || status=$?
     fi
-  fi
-
-  # Antigravity CLI has no system prompt option, so the guide goes in as the
-  # opening message of the conversation.
-  local opening
-  if [ -n "$request" ]; then
-    opening="$prompt
+  else
+    # Antigravity CLI has no system prompt option, so the guide goes in as the
+    # opening message of the conversation.
+    local opening
+    if [ -n "$request" ]; then
+      opening="$prompt
 
 ---
 
 Follow the guide above for this whole conversation. The person's first request is: $request"
-  else
-    opening="$prompt
+    else
+      opening="$prompt
 
 ---
 
 Follow the guide above for this whole conversation. Start by greeting the person in one short sentence and asking what they need help with."
+    fi
+    "$AGY_BIN" -i "$opening" || status=$?
   fi
-  exec "$AGY_BIN" -i "$opening"
+
+  say ""
+  say "YourGeeky has finished. You can close this window now (press Command + W)."
+  return "$status"
 }
 
 main "$@"
